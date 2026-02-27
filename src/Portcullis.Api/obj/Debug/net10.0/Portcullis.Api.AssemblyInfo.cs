@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Portcullis.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7a26ce8baf125275ed15b53e7d0836e7e0a9489a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Portcullis.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Portcullis.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
