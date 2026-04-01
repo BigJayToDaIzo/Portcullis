@@ -7,7 +7,7 @@ public class AuditLogEntry {
   public string? TargetUserId { get; init; }
   public Guid? SecretId { get; init; }
   public AuditAction Action { get; set; } = AuditAction.Create;
-  public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
+  public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
   public string Description { get; set; } = string.Empty;
 }
 
