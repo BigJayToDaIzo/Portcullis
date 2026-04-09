@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Portcullis.Api.Domain.Entities;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 class SecretConfiguration : IEntityTypeConfiguration<Secret>
 {
   void IEntityTypeConfiguration<Secret>.Configure(
-    Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<Secret> builder
+    EntityTypeBuilder<Secret> builder
   )
   {
     builder.Property(s => s.Id).IsRequired();
