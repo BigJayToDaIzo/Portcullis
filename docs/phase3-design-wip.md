@@ -38,15 +38,30 @@ Each method checks the caller's role before proceeding. Owner methods verify the
 
 Three custom exception types. Exceptions bubble up — no try-catch in service or controllers. Single `IExceptionHandler` at the API boundary maps to ProblemDetails (RFC 7807).
 
-| Exception | HTTP Status | When |
-|---|---|---|
-| `SecretNotFoundException` | 404 | Secret ID doesn't exist, or user tries to access a secret that isn't theirs |
-| `NotAuthorizedException` | 403 | Caller's role doesn't permit the operation |
-| `DuplicateSecretNameException` | 409 | Create/update with a name that already exists for that user |
+Each exception carries **structured data** as public read-only properties — the handler has direct access to typed values for logging and ProblemDetails construction without parsing `ex.Message`. The exception constructs its own message from the structured data via `base($"...")` — callers pass typed values, not hand-rolled strings.
+
+### AuditAction Enum
+
+Lives in `Domain/Enums/`. Defines the finite set of operations in the system — used by `NotAuthorizedException` to constrain what operation the caller attempted.
+
+Values: `Create`, `Read`, `Update`, `Delete`, `Reset`
+
+### Exception Definitions
+
+| Exception | HTTP Status | When | Carries |
+|---|---|---|---|
+| `SecretNotFoundException` | 404 | Secret ID doesn't exist, or user tries to access a secret that isn't theirs | `Guid SecretId` |
+| `NotAuthorizedException` | 403 | Caller's role doesn't permit the operation | `Guid UserId`, `AuditAction Operation` |
+| `DuplicateSecretNameException` | 409 | Create/update with a name that already exists for that user | `string Name` |
+
+### Handler Behavior per Exception
+
+- **`SecretNotFoundException`** — Response: 404, detail includes the secret ID (client already sent it). Log: warning level.
+- **`DuplicateSecretNameException`** — Response: 409, detail includes the name (client sent it). Log: warning level.
+- **`NotAuthorizedException`** — Response: 403, generic "You do not have permission to perform this action." — no internals leaked. Log: warning level, full message with userId and operation.
+- **Unexpected exceptions** — Response: generic 500 with no internals leaked. Log: error level.
 
 **404 vs 403 for owner methods**: If a regular user requests a secret that exists but belongs to someone else, return **404 not 403** — don't leak the existence of other users' secrets.
-
-Unexpected exceptions get a generic 500 with no internals leaked.
 
 ---
 

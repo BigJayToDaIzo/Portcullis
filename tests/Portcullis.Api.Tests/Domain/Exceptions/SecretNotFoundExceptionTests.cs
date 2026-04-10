@@ -1,12 +1,33 @@
 namespace Portcullis.Api.Tests.Domain.Exceptions;
+using Portcullis.Api.Domain.Exceptions;
 
 public class SecretNotFoundExceptionTests
 {
     [Fact]
     public void SecretNotFoundException_Inherits_From_Exception()
     {
-        var ex = new Portcullis.Api.Domain.Exceptions.SecretNotFoundException("not found");
+        var ex = new SecretNotFoundException(Guid.NewGuid());
 
-        Assert.IsAssignableFrom<Exception>(ex);
+        Assert.IsType<Exception>(ex, exactMatch: false);
+    }
+
+    [Fact]
+    public void SecretNotFoundException_Exposes_SecretId_Property()
+    {
+        var secretId = Guid.NewGuid();
+
+        var ex = new SecretNotFoundException(secretId);
+
+        Assert.Equal(secretId, ex.SecretId);
+    }
+
+    [Fact]
+    public void SecretNotFoundException_Generates_Message_From_SecretId()
+    {
+        var secretId = Guid.NewGuid();
+
+        var ex = new SecretNotFoundException(secretId);
+
+        Assert.Equal($"Secret '{secretId}' was not found.", ex.Message);
     }
 }
