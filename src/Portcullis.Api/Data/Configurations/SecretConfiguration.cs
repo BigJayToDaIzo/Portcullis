@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Portcullis.Api.Domain.Entities;
 
+namespace Portcullis.Api.Data.Configurations;
+
 class SecretConfiguration : IEntityTypeConfiguration<Secret>
 {
     void IEntityTypeConfiguration<Secret>.Configure(EntityTypeBuilder<Secret> builder)
