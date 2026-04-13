@@ -21,4 +21,22 @@ public class NotAuthorizedExceptionTests
 
         Assert.Equal(userId, ex.UserId);
     }
+
+    [Fact]
+    public void NotAuthorizedException_Exposes_Action_Property()
+    {
+        var action = AuditAction.Reset;
+
+        var ex = new NotAuthorizedException(Guid.NewGuid(), action);
+
+        Assert.Equal(action, ex.Action);
+    }
+
+    [Fact]
+    public void NotAuthorizedException_Generates_Generic_Message()
+    {
+        var ex = new NotAuthorizedException(Guid.NewGuid(), AuditAction.Delete);
+
+        Assert.Equal("User is not authorized to perform this action.", ex.Message);
+    }
 }

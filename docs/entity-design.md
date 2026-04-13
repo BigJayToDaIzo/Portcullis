@@ -17,7 +17,7 @@ All design decisions below were discussed and confirmed by the developer.
 
 | Field | Type | Notes |
 |---|---|---|
-| Id | string | Keycloak `sub` claim. Primary key. Not a GUID — OIDC subject claims are opaque strings. |
+| id | string | keycloak `sub` claim. primary key. not a guid — oidc subject claims are opaque strings. |
 | DisplayName | string | From token claims. For admin dashboard display. |
 | Email | string | From token claims. |
 | CreatedAt | DateTimeOffset | First time this user was seen (first login). |
