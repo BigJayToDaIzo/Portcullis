@@ -1,5 +1,5 @@
-namespace Portcullis.Api.Tests.Domain.Exceptions;
 using Portcullis.Api.Domain.Exceptions;
+namespace Portcullis.Api.Tests.Domain.Exceptions;
 
 public class DuplicateSecretNameExceptionTests
 {

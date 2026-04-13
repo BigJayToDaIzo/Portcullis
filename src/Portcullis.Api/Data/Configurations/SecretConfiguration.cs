@@ -1,15 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-using Portcullis.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Portcullis.Api.Domain.Entities;
 
 class SecretConfiguration : IEntityTypeConfiguration<Secret>
 {
-  void IEntityTypeConfiguration<Secret>.Configure(
-    EntityTypeBuilder<Secret> builder
-  )
-  {
-    builder.Property(s => s.Id).IsRequired();
-    builder.HasIndex(s => new { s.UserId, s.Name }).IsUnique();
-    builder.HasOne<User>();
-  }
+    void IEntityTypeConfiguration<Secret>.Configure(EntityTypeBuilder<Secret> builder)
+    {
+        builder.Property(s => s.Id).IsRequired();
+        builder.HasIndex(s => new { s.UserId, s.Name }).IsUnique();
+        builder.HasOne(s => s.User).WithMany().HasForeignKey(s => s.UserId);
+    }
 }

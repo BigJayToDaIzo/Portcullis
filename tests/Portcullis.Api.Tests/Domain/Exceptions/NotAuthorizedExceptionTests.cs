@@ -1,6 +1,6 @@
-namespace Portcullis.Api.Tests.Domain.Exceptions;
 using Portcullis.Api.Domain.Enums;
 using Portcullis.Api.Domain.Exceptions;
+namespace Portcullis.Api.Tests.Domain.Exceptions;
 
 public class NotAuthorizedExceptionTests
 {
