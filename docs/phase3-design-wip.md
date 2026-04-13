@@ -236,7 +236,7 @@ Filter parameters passed as query strings (e.g. `?name=api&userName=joe`). No fi
 
 1. ~~**Custom exceptions** — `SecretNotFoundException`, `NotAuthorizedException`, `DuplicateSecretNameException`~~ ✅ DONE
 2. ~~**Request DTOs** — `CreateSecretRequest`, `UpdateSecretRequest`~~ ✅ DONE
-3. **Entity/DbContext updates** — Add `User` navigation property to `Secret`, update `SecretConfiguration`, add `SaveChangesAsync` override for `UpdatedAt` stamping *(moved up — entity shape is upstream of DTOs and service signatures)*
+3. ~~**Entity/DbContext updates** — Add `User` navigation property to `Secret`, update `SecretConfiguration`, add `SaveChangesAsync` override for `UpdatedAt` stamping *(moved up — entity shape is upstream of DTOs and service signatures)*~~ ✅ DONE
 4. **Response DTOs** — `SecretResponse`, `AdminSecretResponse` (map from finalized entity shapes)
 5. **Query parameter DTOs** — `SecretQueryParameters` (base), `AdminSecretQueryParameters` (inherits, adds userName)
 6. **PaginatedResponse\<T>** — generic wrapper (pure class)
