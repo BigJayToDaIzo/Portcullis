@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Portcullis.Api.Data.Configurations;
 using Portcullis.Api.Domain.Entities;
 
 namespace Portcullis.Api.Data
