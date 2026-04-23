@@ -40,7 +40,14 @@ public class SecretServiceTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
 
-        _dbContext.Users.Add(new User { Id = "user-1", DisplayName = "Test User", Email = "test@test.com" });
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-1",
+                DisplayName = "Test User",
+                Email = "test@test.com",
+            }
+        );
         await _dbContext.SaveChangesAsync(ct);
 
         var request = new CreateSecretRequest { Name = "api-key", Value = "secret-123" };
@@ -63,16 +70,214 @@ public class SecretServiceTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
 
-        _dbContext.Users.Add(new User { Id = "user-1", DisplayName = "Test User", Email = "test@test.com" });
-        _dbContext.Secrets.Add(new Secret { UserId = "user-1", Name = "api-key", Value = "existing" });
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-1",
+                DisplayName = "Test User",
+                Email = "test@test.com",
+            }
+        );
+        _dbContext.Secrets.Add(
+            new Secret
+            {
+                UserId = "user-1",
+                Name = "api-key",
+                Value = "existing",
+            }
+        );
         await _dbContext.SaveChangesAsync(ct);
 
         var request = new CreateSecretRequest { Name = "api-key", Value = "new-value" };
 
-        var ex = await Assert.ThrowsAsync<DuplicateSecretNameException>(
-            () => _service.CreateSecretAsync("user-1", request)
+        var ex = await Assert.ThrowsAsync<DuplicateSecretNameException>(() =>
+            _service.CreateSecretAsync("user-1", request)
         );
 
         Assert.Equal("api-key", ex.Name);
+    }
+
+    [Fact]
+    public async Task GetSecretAsync_WithOwnerAndExistingSecret_ReturnsSecretResponse()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-1",
+                DisplayName = "Test User",
+                Email = "test@test.com",
+            }
+        );
+        var secret = new Secret
+        {
+            UserId = "user-1",
+            Name = "api-key",
+            Value = "secret-123",
+        };
+        _dbContext.Secrets.Add(secret);
+        await _dbContext.SaveChangesAsync(ct);
+
+        var result = await _service.GetSecretAsync("user-1", secret.Id);
+
+        Assert.Equal(secret.Id, result.Id);
+        Assert.Equal("api-key", result.Name);
+        Assert.Equal("secret-123", result.Value);
+        Assert.Equal(secret.CreatedAt.DateTime, result.CreatedAt);
+        Assert.Equal(secret.UpdatedAt.DateTime, result.UpdatedAt);
+    }
+
+    [Fact]
+    public async Task GetSecretAsync_WithNonExistentSecret_ThrowsSecretNotFoundException()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-1",
+                DisplayName = "Test User",
+                Email = "test@test.com",
+            }
+        );
+        await _dbContext.SaveChangesAsync(ct);
+
+        var missingId = Guid.NewGuid();
+
+        var ex = await Assert.ThrowsAsync<SecretNotFoundException>(() =>
+            _service.GetSecretAsync("user-1", missingId)
+        );
+
+        Assert.Equal(missingId, ex.SecretId);
+    }
+
+    [Fact]
+    public async Task GetSecretAsync_WhenSecretBelongsToDifferentUser_ThrowsSecretNotFoundException()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-1",
+                DisplayName = "User One",
+                Email = "one@test.com",
+            }
+        );
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-2",
+                DisplayName = "User Two",
+                Email = "two@test.com",
+            }
+        );
+        var secret = new Secret
+        {
+            UserId = "user-2",
+            Name = "api-key",
+            Value = "secret-123",
+        };
+        _dbContext.Secrets.Add(secret);
+        await _dbContext.SaveChangesAsync(ct);
+
+        var ex = await Assert.ThrowsAsync<SecretNotFoundException>(() =>
+            _service.GetSecretAsync("user-1", secret.Id)
+        );
+
+        Assert.Equal(secret.Id, ex.SecretId);
+    }
+
+    [Fact]
+    public async Task DeleteSecretAsync_WithOwnerAndExistingSecret_RemovesSecret()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-1",
+                DisplayName = "Test User",
+                Email = "test@test.com",
+            }
+        );
+        var secret = new Secret
+        {
+            UserId = "user-1",
+            Name = "api-key",
+            Value = "secret-123",
+        };
+        _dbContext.Secrets.Add(secret);
+        await _dbContext.SaveChangesAsync(ct);
+
+        await _service.DeleteSecretAsync("user-1", secret.Id);
+
+        var saved = await _dbContext.Secrets.FirstOrDefaultAsync(s => s.Id == secret.Id, ct);
+        Assert.Null(saved);
+    }
+
+    [Fact]
+    public async Task DeleteSecretAsync_WithNonExistentSecret_ThrowsSecretNotFoundException()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-1",
+                DisplayName = "Test User",
+                Email = "test@test.com",
+            }
+        );
+        await _dbContext.SaveChangesAsync(ct);
+
+        var missingId = Guid.NewGuid();
+
+        var ex = await Assert.ThrowsAsync<SecretNotFoundException>(() =>
+            _service.DeleteSecretAsync("user-1", missingId)
+        );
+
+        Assert.Equal(missingId, ex.SecretId);
+    }
+
+    [Fact]
+    public async Task DeleteSecretAsync_WhenSecretBelongsToDifferentUser_ThrowsAndLeavesSecretIntact()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-1",
+                DisplayName = "User One",
+                Email = "one@test.com",
+            }
+        );
+        _dbContext.Users.Add(
+            new User
+            {
+                Id = "user-2",
+                DisplayName = "User Two",
+                Email = "two@test.com",
+            }
+        );
+        var secret = new Secret
+        {
+            UserId = "user-2",
+            Name = "api-key",
+            Value = "secret-123",
+        };
+        _dbContext.Secrets.Add(secret);
+        await _dbContext.SaveChangesAsync(ct);
+
+        var ex = await Assert.ThrowsAsync<SecretNotFoundException>(() =>
+            _service.DeleteSecretAsync("user-1", secret.Id)
+        );
+
+        Assert.Equal(secret.Id, ex.SecretId);
+
+        var stillThere = await _dbContext.Secrets.FirstOrDefaultAsync(s => s.Id == secret.Id, ct);
+        Assert.NotNull(stillThere);
     }
 }

@@ -1,25 +1,24 @@
 using Portcullis.Api.Domain.DTOs;
 
-namespace Portcullis.Api.Domain.Services
+namespace Portcullis.Api.Domain.Services;
+
+public interface ISecretService
 {
-    public interface ISecretService
-    {
-        public Task<PaginatedResponse<SecretResponse>> GetSecretsAsync(
-            string username,
-            SecretQueryParameters queryParams
-        );
-        public Task<SecretResponse> GetSecretAsync(string username, Guid secretId);
-        public Task<SecretResponse> CreateSecretAsync(string username, CreateSecretRequest request);
-        public Task<SecretResponse> UpdateSecretAsync(
-            string username,
-            Guid secretId,
-            UpdateSecretRequest request
-        );
-        public Task DeleteSecretAsync(string username, Guid userId);
-        public Task<PaginatedResponse<AdminSecretResponse>> GetAllSecretsAsync(
-            AdminSecretQueryParameters queryParams
-        );
-        public Task ResetSecretAsync(Guid id);
-        public Task AdminDeleteSecretAsync(Guid id);
-    }
+    public Task<PaginatedResponse<SecretResponse>> GetSecretsAsync(
+        string userId,
+        SecretQueryParameters queryParams
+    );
+    public Task<SecretResponse> GetSecretAsync(string userId, Guid secretId);
+    public Task<SecretResponse> CreateSecretAsync(string userId, CreateSecretRequest request);
+    public Task<SecretResponse> UpdateSecretAsync(
+        string userId,
+        Guid secretId,
+        UpdateSecretRequest request
+    );
+    public Task DeleteSecretAsync(string userId, Guid secretId);
+    public Task<PaginatedResponse<AdminSecretResponse>> GetAllSecretsAsync(
+        AdminSecretQueryParameters queryParams
+    );
+    public Task ResetSecretAsync(Guid secretId);
+    public Task AdminDeleteSecretAsync(Guid secretId);
 }

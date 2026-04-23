@@ -4,74 +4,87 @@ using Portcullis.Api.Domain.DTOs;
 using Portcullis.Api.Domain.Entities;
 using Portcullis.Api.Domain.Exceptions;
 
-namespace Portcullis.Api.Domain.Services
+namespace Portcullis.Api.Domain.Services;
+
+public class SecretService(PortcullisDbContext ctx) : ISecretService
 {
-    public class SecretService(PortcullisDbContext ctx) : ISecretService
+    public Task AdminDeleteSecretAsync(Guid secretId)
     {
-        public Task AdminDeleteSecretAsync(Guid id)
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
+    }
 
-        public async Task<SecretResponse> CreateSecretAsync(string userId, CreateSecretRequest req)
+    public async Task<SecretResponse> CreateSecretAsync(string userId, CreateSecretRequest request)
+    {
+        if (await ctx.Secrets.AnyAsync(s => s.UserId == userId && s.Name == request.Name))
+            throw new DuplicateSecretNameException(request.Name);
+        var secret = new Secret
         {
-            if (await ctx.Secrets.AnyAsync(s => s.UserId == userId && s.Name == req.Name))
-                throw new DuplicateSecretNameException(req.Name);
-            var secret = new Secret
-            {
-                UserId = userId,
-                Name = req.Name,
-                Value = req.Value,
-            };
-            ctx.Secrets.Add(secret);
-            await ctx.SaveChangesAsync();
-            return new SecretResponse
-            {
-                Id = secret.Id,
-                Name = secret.Name,
-                Value = secret.Value,
-                CreatedAt = secret.CreatedAt.DateTime,
-                UpdatedAt = secret.UpdatedAt.DateTime,
-            };
-        }
+            UserId = userId,
+            Name = request.Name,
+            Value = request.Value,
+        };
+        ctx.Secrets.Add(secret);
+        await ctx.SaveChangesAsync();
+        return new SecretResponse
+        {
+            Id = secret.Id,
+            Name = secret.Name,
+            Value = secret.Value,
+            CreatedAt = secret.CreatedAt.DateTime,
+            UpdatedAt = secret.UpdatedAt.DateTime,
+        };
+    }
 
-        public Task DeleteSecretAsync(string username, Guid userId)
-        {
-            throw new NotImplementedException();
-        }
+    public async Task DeleteSecretAsync(string userId, Guid secretId)
+    {
+        var secret =
+            await ctx.Secrets.FirstOrDefaultAsync(s => s.UserId == userId && s.Id == secretId)
+            ?? throw new SecretNotFoundException(secretId);
+        ctx.Secrets.Remove(secret);
+        await ctx.SaveChangesAsync();
+    }
 
-        public Task<PaginatedResponse<AdminSecretResponse>> GetAllSecretsAsync(
-            AdminSecretQueryParameters queryParams
-        )
-        {
-            throw new NotImplementedException();
-        }
+    public Task<PaginatedResponse<AdminSecretResponse>> GetAllSecretsAsync(
+        AdminSecretQueryParameters queryParams
+    )
+    {
+        throw new NotImplementedException();
+    }
 
-        public Task<SecretResponse> GetSecretAsync(string username, Guid secretId)
+    public async Task<SecretResponse> GetSecretAsync(string userId, Guid secretId)
+    {
+        var secret =
+            await ctx.Secrets.FirstOrDefaultAsync(s => s.UserId == userId && s.Id == secretId)
+            ?? throw new SecretNotFoundException(secretId);
+        return new SecretResponse
         {
-            throw new NotImplementedException();
-        }
+            Id = secret.Id,
+            Name = secret.Name,
+            Value = secret.Value,
+            CreatedAt = secret.CreatedAt.DateTime,
+            UpdatedAt = secret.UpdatedAt.DateTime,
+        };
+    }
 
-        public Task<PaginatedResponse<SecretResponse>> GetSecretsAsync(
-            string username,
-            SecretQueryParameters queryParams
-        )
-        {
-            throw new NotImplementedException();
-        }
+    public Task<PaginatedResponse<SecretResponse>> GetSecretsAsync(
+        string userId,
+        SecretQueryParameters queryParams
+    )
+    {
+        throw new NotImplementedException();
+    }
 
-        public Task ResetSecretAsync(Guid id)
-        {
-            throw new NotImplementedException();
-        }
+    public Task ResetSecretAsync(Guid secretId)
+    {
+        throw new NotImplementedException();
+    }
 
-        public Task<SecretResponse> UpdateSecretAsync(
-            string username,
-            Guid secretId,
-            UpdateSecretRequest request
-        )
-        {
-            throw new NotImplementedException();
-        }
+    public async Task<SecretResponse> UpdateSecretAsync(
+        string userId,
+        Guid secretId,
+        UpdateSecretRequest request
+    )
+    {
+        throw new NotImplementedException();
     }
 }

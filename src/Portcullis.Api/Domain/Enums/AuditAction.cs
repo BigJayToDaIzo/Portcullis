@@ -6,6 +6,6 @@ namespace Portcullis.Api.Domain.Enums
         Read,
         Update,
         Delete,
-        Reset
+        Reset,
     }
 }
