@@ -161,9 +161,9 @@ All list endpoints return a paginated wrapper rather than raw arrays.
 | Param | Type | Default | Notes |
 |---|---|---|---|
 | `page` | int | 1 | 1-indexed |
-| `pageSize` | int | 20 | Max cap TBD |
-| `sortBy` | string | `CreatedAt` | Field name to sort on |
-| `sortDirection` | string | `desc` | `asc` or `desc` |
+| `pageSize` | int | 20 | Max cap TBD (see Open Gap 8) |
+| `sortBy` | string | `CreatedAt` | Field name to sort on (whitelist enforced — see Open Gap 9) |
+| `sortDirection` | string | `desc` | `asc` or `desc` (whitelist enforced — see Open Gap 9) |
 
 **Paginated Response Wrapper** — `PaginatedResponse<T>`:
 
@@ -226,7 +226,40 @@ Filter parameters passed as query strings (e.g. `?name=api&userName=joe`). No fi
 ### Gap 7: User Existence in Tests
 **Decision**: Service tests mock DbContext — no FK constraints, arrange whatever state needed. Integration tests (Testcontainers) seed User records via direct DB inserts before creating Secrets. Same pattern as Phase 2.
 
-**Status**: DECIDED
+**Status**: SUPERSEDED — actual implementation uses SQLite in-memory (real EF + constraints) rather than mocked DbContext. User records are seeded per-test in the same arrange block as Secrets. The original "mock DbContext" decision proved less useful than real LINQ translation against a real DB.
+
+### Gap 8: Pagination Max Page Size Cap
+**Decision**: TBD — caller can currently request `pageSize=10000` with no upper bound. Need to either silently clamp (e.g., max 100) or reject with `ArgumentException`. Silent clamp is friendlier for clients; reject is louder about API contract.
+
+**Status**: OPEN — must resolve before implementing `GetSecretsAsync` / `GetAllSecretsAsync`.
+
+### Gap 9: Sort Field & Direction Whitelisting
+**Decision**: TBD. `SortBy` and `SortDirection` are free-form strings on `SecretQueryParameters`. Without a whitelist, callers can pass arbitrary column names (or worse). Need to validate against:
+- SortBy: `Name`, `CreatedAt`, `UpdatedAt` (owner) plus `UserName` (admin)
+- SortDirection: `asc`, `desc` only
+
+Where to enforce — same answer as Gap 5 (service layer, throw `ArgumentException`).
+
+**Status**: OPEN — must resolve before implementing list methods.
+
+### Gap 10: Page Out of Range Behavior
+**Decision**: TBD. If client requests `page=99` and only 2 pages exist, options are: (a) return empty `Items` with correct `TotalCount`/`TotalPages` (RESTful, lets client paginate forward); (b) throw `ArgumentException` (strict). Most APIs choose (a).
+
+**Status**: OPEN.
+
+### Gap 11: Name Filter Match Semantics
+**Decision**: Design doc §Pagination says "partial match / contains" — confirm this means case-insensitive substring (`ILIKE %name%` on Postgres). EF translates `EF.Functions.ILike(s.Name, $"%{name}%")` to the right SQL.
+
+**Status**: OPEN — confirm semantics before TDD.
+
+### Gap 12: AdminSecretResponse DTO Bugs
+**Decision**: Two type mismatches between entity and DTO must be fixed:
+- `AdminSecretResponse.Value` is `string`; should be `string?` (matches `Secret.Value` which can be null after admin reset).
+- `AdminSecretResponse.UserId` is `Guid`; should be `string` (matches `Secret.UserId` / Keycloak subject id, which is string-typed).
+
+These will cause compile failures or null-coalescing surprises during entity-to-DTO mapping in `GetAllSecretsAsync`.
+
+**Status**: OPEN — fix before TDD'ing `GetAllSecretsAsync`.
 
 ---
 
@@ -235,16 +268,20 @@ Filter parameters passed as query strings (e.g. `?name=api&userName=joe`). No fi
 ### Foundation (steps 1–6)
 
 1. ~~**Custom exceptions** — `SecretNotFoundException`, `NotAuthorizedException`, `DuplicateSecretNameException`~~ ✅ DONE
-2. ~~**Request DTOs** — `CreateSecretRequest`, `UpdateSecretRequest`~~ ✅ DONE
-3. ~~**Entity/DbContext updates** — Add `User` navigation property to `Secret`, update `SecretConfiguration`, add `SaveChangesAsync` override for `UpdatedAt` stamping *(moved up — entity shape is upstream of DTOs and service signatures)*~~ ✅ DONE
-4. **Response DTOs** — `SecretResponse`, `AdminSecretResponse` (map from finalized entity shapes)
-5. **Query parameter DTOs** — `SecretQueryParameters` (base), `AdminSecretQueryParameters` (inherits, adds userName)
-6. **PaginatedResponse\<T>** — generic wrapper (pure class)
+2. ~~**Request DTOs** — `CreateSecretRequest`, `UpdateSecretRequest`~~ ✅ DONE *(UpdateSecretRequest later deleted; replaced by `RenameSecretRequest` and `RotateSecretRequest` — see Step 8)*
+3. ~~**Entity/DbContext updates** — Add `User` navigation property to `Secret`, update `SecretConfiguration`, add `SaveChangesAsync` override for `UpdatedAt` stamping~~ ✅ DONE
+4. ~~**Response DTOs** — `SecretResponse`, `AdminSecretResponse`~~ ✅ DONE *(AdminSecretResponse has 2 type bugs — see Open Gap 12)*
+5. ~~**Query parameter DTOs** — `SecretQueryParameters` (base), `AdminSecretQueryParameters` (inherits, adds userName)~~ ✅ DONE
+6. ~~**PaginatedResponse\<T>** — generic wrapper~~ ✅ DONE
 
 ### Core logic (sequential — steps 7–11)
 
-7. **ISecretService** — interface with method signatures matching the service layer table
-8. **SecretService** — core business logic + authorization checks, tested with mocked DbContext
+7. ~~**ISecretService** — interface with method signatures~~ ✅ DONE *(UpdateSecretAsync split into RenameSecretAsync + RotateSecretAsync mid-implementation)*
+8. **SecretService** — IN PROGRESS (90 tests green, 6 of 8 methods done)
+   - ✅ `CreateSecretAsync`, `GetSecretAsync`, `DeleteSecretAsync`, `RenameSecretAsync`, `RotateSecretAsync`, `ResetSecretAsync`, `AdminDeleteSecretAsync`
+   - ⏳ `GetSecretsAsync` (paginated, owner-scoped) — blocked on Open Gaps 8-11
+   - ⏳ `GetAllSecretsAsync` (paginated, admin) — blocked on Open Gaps 8-12
+   - **Authz note:** Service layer takes `userId` for owner methods, no role checks. Admin methods take only `secretId`. Service trusts the API layer for role authz — see authz-strategy memory.
 9. **IExceptionHandler** — maps custom exceptions + `ArgumentException` to ProblemDetails (RFC 7807)
-10. **SecretsController** — thin controller, tested with mocked `ISecretService` + fake `ClaimsPrincipal`
+10. **SecretsController** — thin controller, tested with `WebApplicationFactory<TProgram>` + fake JWT/ClaimsPrincipal. **First test for each admin endpoint must be "non-admin → 403."**
 11. **DI extension method** — `AddApplicationServices()` registration wiring
