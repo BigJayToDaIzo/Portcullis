@@ -8,9 +8,13 @@ namespace Portcullis.Api.Domain.Services;
 
 public class SecretService(PortcullisDbContext ctx) : ISecretService
 {
-    public Task AdminDeleteSecretAsync(Guid secretId)
+    public async Task AdminDeleteSecretAsync(Guid secretId)
     {
-        throw new NotImplementedException();
+        var secret =
+            await ctx.Secrets.FirstOrDefaultAsync(s => s.Id == secretId)
+            ?? throw new SecretNotFoundException(secretId);
+        ctx.Secrets.Remove(secret);
+        await ctx.SaveChangesAsync();
     }
 
     public async Task<SecretResponse> CreateSecretAsync(string userId, CreateSecretRequest request)
@@ -74,17 +78,62 @@ public class SecretService(PortcullisDbContext ctx) : ISecretService
         throw new NotImplementedException();
     }
 
-    public Task ResetSecretAsync(Guid secretId)
+    public async Task ResetSecretAsync(Guid secretId)
     {
-        throw new NotImplementedException();
+        var secret =
+            await ctx.Secrets.FirstOrDefaultAsync(s => s.Id == secretId)
+            ?? throw new SecretNotFoundException(secretId);
+        secret.Value = null;
+        await ctx.SaveChangesAsync();
     }
 
-    public async Task<SecretResponse> UpdateSecretAsync(
+    public async Task<SecretResponse> RenameSecretAsync(
         string userId,
         Guid secretId,
-        UpdateSecretRequest request
+        RenameSecretRequest request
     )
     {
-        throw new NotImplementedException();
+        if (
+            await ctx.Secrets.AnyAsync(s =>
+                s.UserId == userId && s.Name == request.Name && s.Id != secretId
+            )
+        )
+        {
+            throw new DuplicateSecretNameException(request.Name);
+        }
+        var secret =
+            await ctx.Secrets.FirstOrDefaultAsync(s => s.UserId == userId && s.Id == secretId)
+            ?? throw new SecretNotFoundException(secretId);
+        secret.Name = request.Name;
+        await ctx.SaveChangesAsync();
+        return new SecretResponse
+        {
+            Id = secret.Id,
+            Name = secret.Name,
+            Value = secret.Value,
+            CreatedAt = secret.CreatedAt.DateTime,
+            UpdatedAt = secret.UpdatedAt.DateTime,
+        };
+    }
+
+    public async Task<SecretResponse> RotateSecretAsync(
+        string userId,
+        Guid secretId,
+        RotateSecretRequest request
+    )
+    {
+        var secret =
+            await ctx.Secrets.FirstOrDefaultAsync(s => s.UserId == userId && s.Id == secretId)
+            ?? throw new SecretNotFoundException(secretId);
+        secret.Value = request.Value;
+        await ctx.SaveChangesAsync();
+        return new SecretResponse
+        {
+            Id = secret.Id,
+            Name = secret.Name,
+            Value = secret.Value,
+            CreatedAt = secret.CreatedAt.DateTime,
+            UpdatedAt = secret.UpdatedAt.DateTime,
+        };
     }
 }

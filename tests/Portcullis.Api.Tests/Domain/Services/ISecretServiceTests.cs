@@ -49,16 +49,31 @@ public class ISecretServiceTests
     }
 
     [Fact]
-    public async Task UpdateSecretAsync_AcceptsUserIdSecretIdAndRequest_ReturnsSecretResponse()
+    public async Task RenameSecretAsync_AcceptsUserIdSecretIdAndRequest_ReturnsSecretResponse()
     {
         var service = Substitute.For<ISecretService>();
         var secretId = Guid.NewGuid();
-        var request = new UpdateSecretRequest { Name = "updated-key" };
-        var expected = new SecretResponse { Id = secretId, Name = "updated-key" };
+        var request = new RenameSecretRequest { Name = "renamed-key" };
+        var expected = new SecretResponse { Id = secretId, Name = "renamed-key" };
 
-        service.UpdateSecretAsync("user-1", secretId, request).Returns(expected);
+        service.RenameSecretAsync("user-1", secretId, request).Returns(expected);
 
-        var result = await service.UpdateSecretAsync("user-1", secretId, request);
+        var result = await service.RenameSecretAsync("user-1", secretId, request);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async Task RotateSecretAsync_AcceptsUserIdSecretIdAndRequest_ReturnsSecretResponse()
+    {
+        var service = Substitute.For<ISecretService>();
+        var secretId = Guid.NewGuid();
+        var request = new RotateSecretRequest { Value = "new-secret-value" };
+        var expected = new SecretResponse { Id = secretId, Value = "new-secret-value" };
+
+        service.RotateSecretAsync("user-1", secretId, request).Returns(expected);
+
+        var result = await service.RotateSecretAsync("user-1", secretId, request);
 
         Assert.Equal(expected, result);
     }

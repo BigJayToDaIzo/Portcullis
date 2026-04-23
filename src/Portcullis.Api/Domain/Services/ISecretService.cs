@@ -10,10 +10,16 @@ public interface ISecretService
     );
     public Task<SecretResponse> GetSecretAsync(string userId, Guid secretId);
     public Task<SecretResponse> CreateSecretAsync(string userId, CreateSecretRequest request);
-    public Task<SecretResponse> UpdateSecretAsync(
+
+    public Task<SecretResponse> RenameSecretAsync(
         string userId,
         Guid secretId,
-        UpdateSecretRequest request
+        RenameSecretRequest request
+    );
+    public Task<SecretResponse> RotateSecretAsync(
+        string userId,
+        Guid secretId,
+        RotateSecretRequest request
     );
     public Task DeleteSecretAsync(string userId, Guid secretId);
     public Task<PaginatedResponse<AdminSecretResponse>> GetAllSecretsAsync(
